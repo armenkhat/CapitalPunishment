@@ -1,7 +1,7 @@
 ---
-title: "GSS challange More Data"
-author: "Put your name here!"
-date: "put the date here"
+title: "GSS Challenge More Data"
+author: "Armen Khatchatrian"
+date: "November 24, 2026"
 output: html_document
 ---
 
@@ -30,9 +30,19 @@ mydata <- na.omit(mydata)
 Is attitude toward capitol punishment (cappun) independent of race (race)?
 If not, then whose view differs from whom??
 
+The purpose of this project is to determine whether there is a relationship between race and attitudes toward capital punishment in the United States. The data used in this project comes from the 2016 General Social Survey (GSS), which collects information about the attitudes, behaviors, and opinions of individuals in American society.
+
+Capital punishment is a controversial issue, and opinions about it may differ among racial groups because of differences in personal experiences, social backgrounds, and perceptions of the criminal justice system. This project will examine whether attitudes toward capital punishment are independent of race. If a statistically significant relationship exists, further analysis will be conducted to determine which racial groups differ from one another. The project will also examine whether including more available observations affects the results of the analysis.
+
 # Methods
 
 <!--Decide on your methods:  use "variable analysis" or other appropriate descriptors.  Make sure to choose at least one graphical method and at least one numerical method. Discuss what data manipulations may be needed for example subsetting or other binning procedures and what sort of graphical displays and inferential tools will be used!-->
+
+This project uses bivariate analysis because it examines the relationship between two categorical variables, race and attitudes toward capital punishment. Race is the explanatory variable, and attitudes toward capital punishment is the response variable.
+
+The data will be prepared by selecting the variables needed for the analysis and removing observations with missing values. Bar graphs will be used to visually compare the proportion of respondents who favor or oppose capital punishment within each racial group. Contingency tables and percentages will also be used to numerically describe the relationship between the two variables.
+
+A chi-square test of independence will be conducted to determine whether a statistically significant relationship exists between race and attitudes toward capital punishment. If the null hypothesis is rejected, pairwise comparisons using Fisher's exact tests will be conducted to determine which racial groups differ significantly. The results will also be compared using different amounts of available data.
 
 # Results
 
@@ -44,33 +54,134 @@ If not, then whose view differs from whom??
 
 <!--Graphical results here.  Make sure to show your code.  Provide appropriate labels for axes, giving units if possible, and provide a good title for the graph, too.  Use the graphical results to describe the patterns if any that exist in the data as focused toward the research question. Bottom line is to explain the features of the graph that are relevant to conforming or departing to what is expected by your null hypothesis !-->
 
+```{r}
+ggplot(mydata, aes(x = race, fill = cappun)) +
+  geom_bar(position = "fill") +
+  labs(title = "Attitudes Toward Capital Punishment by Race",
+       x = "Race",
+       y = "Proportion of Respondents",
+       fill = "Attitude") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal()
+```
 
+The graph shows that attitudes toward capital punishment differ among the three racial groups. White respondents have the highest proportion of support for capital punishment, while Black respondents have the lowest proportion of support. Respondents categorized as other fall between the two groups. If race and attitudes toward capital punishment were independent, we would expect the proportions to be relatively similar across all three racial groups. However, the differences shown in the graph suggest that there may be a relationship between the two variables.
 
 ## Now with The Most data (fewer variables gives more data points)
 
 
+```{r}
+dim(GSS)
+dim(na.omit(GSS))
+dim(mydata)
+
+nrow(GSS) - nrow(mydata)
+```
+
+The original 2016 General Social Survey dataset contains 2,867 observations and 961 variables. Removing observations with missing values across all 961 variables results in zero complete observations. However, by selecting only race and attitudes toward capital punishment before removing missing values, we are able to retain 2,695 observations.
+
+Only 172 observations were excluded from the analysis. Selecting only the variables relevant to the research question allows us to retain more data and avoids unnecessarily removing respondents who have missing values in unrelated variables.
 
 ### Numerical Descriptive Results
 
 <!--Numerical results go here. Use the numerical results to describe the patterns if any that exist in the data as focused toward the research question!-->
 
+```{r}
+mytable <- table(mydata$race, mydata$cappun)
+mytable
 
+round(prop.table(mytable, margin = 1) * 100, 2)
 
+addmargins(mytable)
+```
+
+Of the 2,695 respondents included in the analysis, 1,629 favored capital punishment and 1,066 opposed it. Approximately 65.10% of White respondents favored capital punishment compared to 42.63% of Black respondents and 55.20% of respondents categorized as other.
+
+The largest difference was between White and Black respondents, with a difference of approximately 22.47 percentage points in support for capital punishment. Black respondents were the only racial group in which the majority opposed capital punishment. These numerical results support the patterns observed in the graph and suggest that race and attitudes toward capital punishment may not be independent.
 
 ## Now with More data
 
+```{r}
+round(nrow(mydata) / nrow(GSS) * 100, 2)
 
+round(prop.table(table(mydata$race, mydata$cappun),
+                 margin = 1) * 100, 2)
+```
+
+By selecting only the two variables needed for this analysis, approximately 94% of the original respondents were retained. This provides a larger usable sample without requiring respondents to have complete answers to unrelated survey questions. The results continue to show that White respondents have the highest percentage of support for capital punishment, followed by respondents categorized as other and Black respondents.
 
 ## Inferential Results
 
 <!--State hypothesis clearly.  Make sure your discussion of the inferential test covers all the aspects that the test output produces, such as test statistic, p-value etc.  Make a decision about the null hypothesis, explain the assumptions on which the selected test/procedure was based, and why the chosen procedure satisfys the assumptions and is appropriate to answer the research question!-->
 
-`
+
+Null Hypothesis (H₀): Race and attitudes toward capital punishment are independent of one another.
+
+Alternative Hypothesis (Hₐ): Race and attitudes toward capital punishment are not independent of one another.
+
+A significance level of 0.05 will be used to determine whether the null hypothesis should be rejected.
+
+```{r}
+chi <- chisq.test(mytable)
+chi
+chi$expected
+```
+
+A Pearson's chi-square test of independence was conducted to determine whether race and attitudes toward capital punishment are independent of one another. The test produced a chi-square statistic of 80.40 with 2 degrees of freedom and a p-value of less than 2.2e-16.
+
+Since the p-value is significantly smaller than the significance level of 0.05, we reject the null hypothesis. There is sufficient statistical evidence to conclude that race and attitudes toward capital punishment are associated.
+
+The chi-square test is appropriate because both variables are categorical, each respondent contributes to only one cell in the contingency table, and all expected cell frequencies are greater than five. The smallest expected frequency was approximately 98.89, satisfying the expected frequency requirement. The analysis assumes that individual responses are independent.
+
+### Pairwise Comparisons
+
+```{r}
+fisher.test(mytable[c("white", "black"), ])
+
+fisher.test(mytable[c("white", "other"), ])
+
+fisher.test(mytable[c("black", "other"), ])
+
+pvalues <- c(
+  fisher.test(mytable[c("white", "black"), ])$p.value,
+  fisher.test(mytable[c("white", "other"), ])$p.value,
+  fisher.test(mytable[c("black", "other"), ])$p.value
+)
+
+names(pvalues) <- c(
+  "White vs Black",
+  "White vs Other",
+  "Black vs Other"
+)
+
+p.adjust(pvalues, method = "holm")
+```
+
+Since the chi-square test indicated a statistically significant relationship between race and attitudes toward capital punishment, Fisher's exact tests were conducted to determine which racial groups differed from one another. The Holm method was used to adjust the p-values because multiple comparisons were being conducted.
+
+The results showed statistically significant differences between all three racial groups. White respondents had approximately 2.51 times the odds of favoring capital punishment compared to Black respondents and 1.51 times the odds compared to respondents categorized as other. Black respondents had approximately 0.60 times the odds of favoring capital punishment compared to respondents categorized as other.
+
+All three adjusted p-values were below the significance level of 0.05. Therefore, we can conclude that attitudes toward capital punishment differ significantly between White, Black, and other respondents in the sample.
 
 
 ## More data version
 
+```{r}
+chisq.test(table(mydata$race, mydata$cappun))
+```
+
+Using the maximum available sample of respondents with valid answers to both questions, the chi-square test produces a statistically significant result. Therefore, the null hypothesis of independence is rejected. A comparison with the complete dataset across all 961 variables cannot be performed because removing all missing values leaves no observations.
 
 # Discussion and Conclusion
 
 <!--Discussion and conclusion here.  If you found a relationship be sure to consider whether the relationship occurs because one of the variavbles causes the other, or whether they perhasps are related for some other reason.  Watch the chapter 6 videos from the GeorgeTown videos collection.!-->
+
+The purpose of this project was to determine whether attitudes toward capital punishment are independent of race. Using data from the 2016 General Social Survey, both the descriptive and inferential results showed a statistically significant relationship between the two variables.
+
+White respondents had the highest level of support for capital punishment at 65.10%, followed by respondents categorized as other at 55.20% and Black respondents at 42.63%. The chi-square test provided sufficient evidence to reject the null hypothesis. Further analysis using Fisher's exact tests showed that all three racial groups differed significantly from one another.
+
+Although the results show a relationship between race and attitudes toward capital punishment, this does not mean that race directly causes individuals to support or oppose capital punishment. Other factors, such as political beliefs, education, socioeconomic status, personal experiences, and perceptions of the criminal justice system, may also influence these attitudes.
+
+This study also demonstrated the importance of selecting relevant variables before removing missing data. By selecting only race and attitudes toward capital punishment, we were able to retain 2,695 of the original 2,867 respondents. One limitation of this study is that the data was collected in 2016 and may not accurately reflect current public opinion. Additionally, the analysis did not account for other variables or survey weights.
+
+In conclusion, the results provide strong statistical evidence that race and attitudes toward capital punishment are not independent. Future research could include additional variables to better understand why these differences exist and whether attitudes toward capital punishment have changed over time.
